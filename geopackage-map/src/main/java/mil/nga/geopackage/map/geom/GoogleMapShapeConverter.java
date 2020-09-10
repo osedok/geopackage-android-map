@@ -10,7 +10,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 
-import org.osgeo.proj4j.units.Units;
+import org.locationtech.proj4j.units.Units;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -568,7 +568,7 @@ public class GoogleMapShapeConverter {
         if (simplifyTolerance != null) {
 
             // Reproject to web mercator if not in meters
-            if (projection != null && projection.getUnit() != Units.METRES) {
+            if (projection != null && !projection.isUnit(Units.METRES)) {
                 points = toWebMercator.transform(points);
             }
 
@@ -577,7 +577,7 @@ public class GoogleMapShapeConverter {
                     simplifyTolerance);
 
             // Reproject back to the original projection
-            if (projection != null && projection.getUnit() != Units.METRES) {
+            if (projection != null && !projection.isUnit(Units.METRES)) {
                 simplifiedPoints = fromWebMercator.transform(simplifiedPoints);
             }
         } else {
@@ -1625,6 +1625,7 @@ public class GoogleMapShapeConverter {
                 polylineOption.geodesic(polylines.getOptions().isGeodesic());
                 polylineOption.visible(polylines.getOptions().isVisible());
                 polylineOption.zIndex(polylines.getOptions().getZIndex());
+                polylineOption.width(polylines.getOptions().getWidth());
             }
             Polyline polyline = addPolylineToMap(map, polylineOption);
             multiPolyline.add(polyline);
@@ -1650,6 +1651,7 @@ public class GoogleMapShapeConverter {
                 polygonOption.geodesic(polygons.getOptions().isGeodesic());
                 polygonOption.visible(polygons.getOptions().isVisible());
                 polygonOption.zIndex(polygons.getOptions().getZIndex());
+                polygonOption.strokeWidth(polygons.getOptions().getStrokeWidth());
             }
             com.google.android.gms.maps.model.Polygon polygon = addPolygonToMap(
                     map, polygonOption);
@@ -1689,7 +1691,7 @@ public class GoogleMapShapeConverter {
      * @param polygonMarkerOptions     polygon marker options
      * @param polygonMarkerHoleOptions polygon marker hole options
      * @param globalPolylineOptions    global polyline options
-     * @param globalPolygonOptions     globale polygon options
+     * @param globalPolygonOptions     global polygon options
      * @return google map shape markers
      */
     public GoogleMapShapeMarkers addShapeToMapAsMarkers(GoogleMap map,
@@ -1864,6 +1866,7 @@ public class GoogleMapShapeConverter {
             polylineOptions.geodesic(globalPolylineOptions.isGeodesic());
             polylineOptions.visible(globalPolylineOptions.isVisible());
             polylineOptions.zIndex(globalPolylineOptions.getZIndex());
+            polylineOptions.width(globalPolylineOptions.getWidth());
         }
 
         Polyline polyline = addPolylineToMap(map, polylineOptions);
@@ -1901,6 +1904,7 @@ public class GoogleMapShapeConverter {
             polygonOptions.geodesic(globalPolygonOptions.isGeodesic());
             polygonOptions.visible(globalPolygonOptions.isVisible());
             polygonOptions.zIndex(globalPolygonOptions.getZIndex());
+            polygonOptions.strokeWidth(globalPolygonOptions.getStrokeWidth());
         }
 
         com.google.android.gms.maps.model.Polygon polygon = addPolygonToMap(

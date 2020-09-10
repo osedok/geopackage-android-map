@@ -4,27 +4,32 @@ apply plugin: 'signing'
 
 group = "mil.nga.geopackage.map"
 archivesBaseName = "geopackage-android-map"
-version = "3.0.3"
+version = "4.0.1"
 def remotePublish = false
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
 
     dexOptions {
         javaMaxHeapSize "4g"
     }
 
     defaultConfig {
-        minSdkVersion 14
-        targetSdkVersion 27
+        minSdkVersion 16
+        targetSdkVersion 29
         multiDexEnabled true
 
         testApplicationId 'mil.nga.geopackage.map.test'
-        testInstrumentationRunner "android.test.InstrumentationTestRunner"
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     configurations {
         javadocDeps
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
     buildTypes {
@@ -48,31 +53,32 @@ android {
         classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
         classpath += configurations.javadocDeps
         classpath += files("${android.sdkDirectory}/extras/google/google_play_services/libproject/google-play-services_lib/libs/google-play-services.jar")
-        classpath += files("${android.sdkDirectory}/extras/android/support/v13/android-support-v13.jar")
-        options.links("http://ngageoint.github.io/geopackage-android/docs/api/");
-        options.links("http://ngageoint.github.io/geopackage-core-java/docs/api/");
-        options.links("http://ngageoint.github.io/simple-features-wkb-java/docs/api/");
-        options.links("http://ngageoint.github.io/simple-features-geojson-java/docs/api/");
-        options.links("http://ngageoint.github.io/simple-features-proj-java/docs/api/");
-        options.links("http://ngageoint.github.io/simple-features-java/docs/api/");
-        options.links("http://ngageoint.github.io/tiff-java/docs/api/");
-        options.links("http://ormlite.com/javadoc/ormlite-core/");
-        options.links("http://ormlite.com/javadoc/ormlite-android/");
-        options.links("http://docs.oracle.com/javase/7/docs/api/");
-        options.links("http://hjg.com.ar/pngj/apidocs/");
-        options.linksOffline("http://d.android.com/reference","${android.sdkDirectory}/docs/reference");
-        options.linksOffline("http://d.android.com/reference","${android.sdkDirectory}/extras/google/google_play_services/reference");
+        options.links "https://ngageoint.github.io/tiff-java/docs/api/"
+        options.links "https://ngageoint.github.io/simple-features-java/docs/api/"
+        options.links "https://ngageoint.github.io/simple-features-wkb-java/docs/api/"
+        options.links "https://ngageoint.github.io/simple-features-wkt-java/docs/api/"
+        options.links "https://ngageoint.github.io/simple-features-proj-java/docs/api/"
+        options.links "https://ngageoint.github.io/simple-features-geojson-java/docs/api/"
+        options.links "https://ngageoint.github.io/ogc-api-features-json-java/docs/api/"
+        options.links "https://ngageoint.github.io/geopackage-core-java/docs/api/"
+        options.links "https://ngageoint.github.io/geopackage-android/docs/api/"
+        options.links "http://ormlite.com/javadoc/ormlite-core/"
+        options.links "http://ormlite.com/javadoc/ormlite-android/"
+        options.links "https://docs.oracle.com/javase/8/docs/api/"
+        options.links "http://hjg.com.ar/pngj/apidocs/"
+        options.linksOffline "https://d.android.com/reference","${android.sdkDirectory}/docs/reference"
+        options.linksOffline "https://d.android.com/reference","${android.sdkDirectory}/extras/google/google_play_services/reference"
         destinationDir = file("../javadoc/")
         failOnError false
     }
 
     task javadocJar(type: Jar) {
-        classifier = 'javadoc'
+        archiveClassifier.set("javadoc")
         from javadoc
     }
 
     task sourcesJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier.set("sources")
         from sourceSets.main.java.srcDirs
     }
 
@@ -155,10 +161,12 @@ android {
 }
 
 dependencies {
-    api 'com.google.android.gms:play-services-maps:15.0.1'
-    api 'com.google.maps.android:android-maps-utils:0.5'
-    api 'mil.nga.geopackage:geopackage-android:3.0.2'
-    //compile project(':geopackage-sdk') // uncomment me to build locally
-    javadocDeps 'mil.nga.geopackage:geopackage-android:3.0.2'
-    testImplementation 'com.android.support:multidex:1.0.3'
+    api 'com.google.android.gms:play-services-maps:17.0.0'
+    api 'com.google.maps.android:android-maps-utils:2.0.3'
+    api 'mil.nga.geopackage:geopackage-android:4.0.0'
+    //api project(':geopackage-sdk') // uncomment me to build locally
+    javadocDeps 'mil.nga.geopackage:geopackage-android:4.0.0'
+    testImplementation 'androidx.multidex:multidex:2.0.1'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test:rules:1.2.0'
 }

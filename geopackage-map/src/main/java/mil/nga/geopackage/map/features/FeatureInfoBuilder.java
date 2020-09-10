@@ -5,7 +5,6 @@ import android.content.res.Resources;
 import android.util.Log;
 
 import com.google.android.gms.maps.model.LatLng;
-import com.j256.ormlite.dao.DaoManager;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -16,8 +15,8 @@ import java.util.Map;
 import java.util.Set;
 
 import mil.nga.geopackage.GeoPackageException;
-import mil.nga.geopackage.core.srs.SpatialReferenceSystem;
-import mil.nga.geopackage.core.srs.SpatialReferenceSystemDao;
+import mil.nga.geopackage.extension.schema.columns.DataColumns;
+import mil.nga.geopackage.extension.schema.columns.DataColumnsDao;
 import mil.nga.geopackage.features.index.FeatureIndexListResults;
 import mil.nga.geopackage.features.index.FeatureIndexResults;
 import mil.nga.geopackage.features.user.FeatureDao;
@@ -28,8 +27,8 @@ import mil.nga.geopackage.map.R;
 import mil.nga.geopackage.map.geom.GoogleMapShape;
 import mil.nga.geopackage.map.geom.GoogleMapShapeConverter;
 import mil.nga.geopackage.map.tiles.overlay.FeatureOverlayQuery;
-import mil.nga.geopackage.schema.columns.DataColumns;
-import mil.nga.geopackage.schema.columns.DataColumnsDao;
+import mil.nga.geopackage.srs.SpatialReferenceSystem;
+import mil.nga.geopackage.srs.SpatialReferenceSystemDao;
 import mil.nga.geopackage.tiles.overlay.FeatureRowData;
 import mil.nga.geopackage.tiles.overlay.FeatureTableData;
 import mil.nga.sf.Geometry;
@@ -529,8 +528,8 @@ public class FeatureInfoBuilder {
 
         if (geometryData.getGeometry() != null) {
 
+            SpatialReferenceSystemDao srsDao = SpatialReferenceSystemDao.create(featureDao.getDb());
             try {
-                SpatialReferenceSystemDao srsDao = DaoManager.createDao(featureDao.getDb().getConnectionSource(), SpatialReferenceSystem.class);
                 int srsId = geometryData.getSrsId();
                 SpatialReferenceSystem srs = srsDao.queryForId((long) srsId);
 
@@ -558,9 +557,8 @@ public class FeatureInfoBuilder {
      * @return data columns dao
      */
     private DataColumnsDao getDataColumnsDao() {
-        DataColumnsDao dataColumnsDao = null;
+        DataColumnsDao dataColumnsDao = DataColumnsDao.create(featureDao.getDb());
         try {
-            dataColumnsDao = DaoManager.createDao(featureDao.getDb().getConnectionSource(), DataColumns.class);
             if (!dataColumnsDao.isTableExists()) {
                 dataColumnsDao = null;
             }

@@ -8,8 +8,8 @@ import java.util.Collection;
 import java.util.List;
 
 import mil.nga.geopackage.GeoPackage;
-import mil.nga.geopackage.extension.link.FeatureTileTableLinker;
-import mil.nga.geopackage.extension.scale.TileScaling;
+import mil.nga.geopackage.extension.nga.link.FeatureTileTableLinker;
+import mil.nga.geopackage.extension.nga.scale.TileScaling;
 import mil.nga.geopackage.tiles.retriever.GeoPackageTile;
 import mil.nga.geopackage.tiles.user.TileDao;
 
@@ -53,10 +53,31 @@ public class GeoPackageOverlayFactory {
 
         BoundedOverlay overlay = null;
 
-        if (tileDao.isGoogleTiles()) {
-            overlay = new GoogleAPIGeoPackageOverlay(tileDao);
+        if (tileDao.isXYZTiles()) {
+            overlay = new XYZGeoPackageOverlay(tileDao);
         } else {
             overlay = new GeoPackageOverlay(tileDao);
+        }
+
+        return overlay;
+    }
+
+    /**
+     * Get a Bounded Overlay Tile Provider for the Tile DAO with the display density
+     *
+     * @param tileDao tile dao
+     * @param density display density: {@link android.util.DisplayMetrics#density}
+     * @return bounded overlay
+     * @since 3.2.0
+     */
+    public static BoundedOverlay getBoundedOverlay(TileDao tileDao, float density) {
+
+        BoundedOverlay overlay = null;
+
+        if (tileDao.isXYZTiles()) {
+            overlay = new XYZGeoPackageOverlay(tileDao);
+        } else {
+            overlay = new GeoPackageOverlay(tileDao, density);
         }
 
         return overlay;
@@ -72,6 +93,19 @@ public class GeoPackageOverlayFactory {
      */
     public static BoundedOverlay getBoundedOverlay(TileDao tileDao, TileScaling scaling) {
         return new GeoPackageOverlay(tileDao, scaling);
+    }
+
+    /**
+     * Get a Bounded Overlay Tile Provider for the Tile DAO with the display density and tile creator options
+     *
+     * @param tileDao tile dao
+     * @param density display density: {@link android.util.DisplayMetrics#density}
+     * @param scaling tile scaling options
+     * @return bounded overlay
+     * @since 3.2.0
+     */
+    public static BoundedOverlay getBoundedOverlay(TileDao tileDao, float density, TileScaling scaling) {
+        return new GeoPackageOverlay(tileDao, density, scaling);
     }
 
     /**

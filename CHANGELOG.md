@@ -4,9 +4,62 @@ Adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
-## 3.0.3 (TBD)
+## 4.0.1 (TBD)
 
 * TBD
+
+## [4.0.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/4.0.0) (07-14-2020)
+
+* geopackage-android version 4.0.0
+* android-maps-utils version 2.0.3
+* gradle plugin updated to 4.0.1
+
+## [3.5.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/3.5.0) (03-11-2020)
+
+* geopackage-android version 3.5.0
+* XYZ tile rebranding, previously referred to as Google
+* Queries by specified columns
+* gradle plugin updated to 3.6.1
+
+## [3.4.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/3.4.0) (11-14-2019)
+
+* compile SDK version 29
+* geopackage-android version 3.4.0
+* android-maps-utils version 0.6.2
+* Java 8
+* gradle plugin updated to 3.5.2
+* gradle version 5.4.1
+
+## [3.3.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/3.3.0) (07-10-2019)
+
+* geopackage-android version 3.3.0
+* play-services-maps version 17.0.0
+* gradle plugin updated to 3.4.2
+* gradle version 5.1.1
+
+## [3.2.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/3.2.0) (04-02-2019)
+
+* geopackage-android version 3.2.0
+* play-services-maps version 16.1.0
+* Feature Style cache and utilities
+* Feature Shape for maintaining shapes and metadata shapes for a single feature
+* Feature Shapes improvements for maintaining map shapes
+* Overlay improvements for bounds checking
+* Overlay map and tile density support
+* Map Shape Converter stroke width setting for multiple shapes and marker shapes
+* Upgrade to AndroidX support libraries
+* gradle plugin updated to 3.3.2
+* gradle version 4.10.1
+
+## [3.1.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/3.1.0) (10-04-2018)
+
+* geopackage-android version 3.1.0
+* min SDK version updated to 16
+* compile SDK version 28
+* play-services-maps version 16.0.0
+* Android Manifest Apache HTTP legacy library flag
+* gradle plugin updated to 3.2.0
+* gradle version 4.6
 
 ## [3.0.2](https://github.com/ngageoint/geopackage-android-map/releases/tag/3.0.2) (07-27-2018)
 
