@@ -2,7 +2,7 @@
 
 ### GeoPackage Android Map Lib ####
 
-The [GeoPackage Libraries](http://ngageoint.github.io/GeoPackage/) were developed at the [National Geospatial-Intelligence Agency (NGA)](http://www.nga.mil/) in collaboration with [BIT Systems](http://www.bit-sys.com/). The government has "unlimited rights" and is releasing this software to increase the impact of government investments by providing developers with the opportunity to take things in new directions. The software use, modification, and distribution rights are stipulated within the [MIT license](http://choosealicense.com/licenses/mit/).
+The [GeoPackage Libraries](http://ngageoint.github.io/GeoPackage/) were developed at the [National Geospatial-Intelligence Agency (NGA)](http://www.nga.mil/) in collaboration with [BIT Systems](https://www.caci.com/bit-systems/). The government has "unlimited rights" and is releasing this software to increase the impact of government investments by providing developers with the opportunity to take things in new directions. The software use, modification, and distribution rights are stipulated within the [MIT license](http://choosealicense.com/licenses/mit/).
 
 ### Pull Requests ###
 If you'd like to contribute to this project, please make a pull request. We'll review the pull request and discuss the changes. All pull request contributions to this project will be released under the MIT license.
@@ -15,7 +15,7 @@ Software source code previously released under an open source license and then m
 
 The GeoPackage Android Map SDK provides Google Map library implementations in addition to the inherited base [GeoPackage Android](https://github.com/ngageoint/geopackage-android/) functionality.  The library provides TileProvider overlay implementations and Google Map shape translations.
 
-<a href='http://www.opengeospatial.org/resource/products/details/?pid=1626'>
+<a href='https://www.ogc.org/resource/products/details/?pid=1732'>
     <img src="https://github.com/ngageoint/GeoPackage/raw/master/docs/images/ogc.gif" height=50>
 </a>
 
@@ -32,10 +32,6 @@ The [GeoPackage MapCache](https://github.com/ngageoint/geopackage-mapcache-andro
 ##### MAGE #####
 
 The [Mobile Awareness GEOINT Environment (MAGE)](https://github.com/ngageoint/mage-android) app provides mobile situational awareness capabilities. It [uses the SDK](https://github.com/ngageoint/mage-android/search?q=GeoPackage&type=Code) to provide GeoPackage functionality.
-
-##### DICE #####
-
-The [Disconnected Interactive Content Explorer (DICE)](https://github.com/ngageoint/disconnected-content-explorer-android) app allows users to load and display interactive content without a network connection. It [uses the SDK](https://github.com/ngageoint/disconnected-content-explorer-android/search?q=GeoPackage&type=Code) to provide GeoPackage functionality on the map and within reports.
 
 #### Example ####
 
@@ -84,8 +80,7 @@ GoogleMapShapeConverter converter = new GoogleMapShapeConverter(
         featureDao.getProjection());
 FeatureCursor featureCursor = featureDao.queryForAll();
 try {
-    while (featureCursor.moveToNext()) {
-        FeatureRow featureRow = featureCursor.getRow();
+    for (FeatureRow featureRow : featureCursor) {
         GeoPackageGeometryData geometryData = featureRow.getGeometry();
         if (geometryData != null && !geometryData.isEmpty()) {
             Geometry geometry = geometryData.getGeometry();
@@ -104,14 +99,33 @@ String tileTable = tiles.get(0);
 TileDao tileDao = geoPackage.getTileDao(tileTable);
 TileCursor tileCursor = tileDao.queryForAll();
 try {
-    while (tileCursor.moveToNext()) {
-        TileRow tileRow = tileCursor.getRow();
+    for (TileRow tileRow : tileCursor) {
         byte[] tileBytes = tileRow.getTileData();
         Bitmap tileBitmap = tileRow.getTileDataBitmap();
         // ...
     }
 } finally {
     tileCursor.close();
+}
+
+// Retrieve Tiles by XYZ
+GeoPackageTileRetriever retriever = new GeoPackageTileRetriever(tileDao);
+GeoPackageTile geoPackageTile = retriever.getTile(2, 2, 2);
+if (geoPackageTile != null) {
+    byte[] tileBytes = geoPackageTile.getData();
+    Bitmap tileBitmap = geoPackageTile.getBitmap();
+    // ...
+}
+
+// Retrieve Tiles by Bounding Box
+TileCreator tileCreator = new TileCreator(
+        tileDao, ProjectionFactory.getProjection(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM));
+GeoPackageTile geoPackageTile2 = tileCreator.getTile(
+        new BoundingBox(-90.0, 0.0, 0.0, 66.513260));
+if (geoPackageTile2 != null) {
+    byte[] tileBytes = geoPackageTile2.getData();
+    Bitmap tileBitmap = geoPackageTile2.getBitmap();
+    // ...
 }
 
 // Tile Provider (GeoPackage or Google API)
@@ -122,13 +136,30 @@ overlayOptions.tileProvider(overlay);
 overlayOptions.zIndex(-1);
 map.addTileOverlay(overlayOptions);
 
+BoundingBox boundingBox = BoundingBox.worldWebMercator();
+Projection projection = ProjectionFactory
+        .getProjection(ProjectionConstants.EPSG_WEB_MERCATOR);
+
 // Index Features
-FeatureIndexManager indexer = new FeatureIndexManager(context, geoPackage, featureDao);
+FeatureIndexManager indexer = new FeatureIndexManager(context, geoPackage, featureDao, false);
 indexer.setIndexLocation(FeatureIndexType.GEOPACKAGE);
 int indexedCount = indexer.index();
 
+// Query Indexed Features in paginated chunks
+FeatureIndexResults indexResults = indexer.queryForChunk(boundingBox,
+        projection, 50);
+FeaturePaginatedCursor paginatedCursor = indexer
+        .paginate(indexResults);
+for (FeatureRow featureRow : paginatedCursor) {
+    GeoPackageGeometryData geometryData = featureRow.getGeometry();
+    if (geometryData != null && !geometryData.isEmpty()) {
+        Geometry geometry = geometryData.getGeometry();
+        // ...
+    }
+}
+
 // Feature Tile Provider (dynamically draw tiles from features)
-FeatureTiles featureTiles = new DefaultFeatureTiles(context, featureDao, context.getResources().getDisplayMetrics().density);
+FeatureTiles featureTiles = new DefaultFeatureTiles(context, featureDao, context.getResources().getDisplayMetrics().density, false);
 featureTiles.setMaxFeaturesPerTile(1000); // Set max features to draw per tile
 NumberFeaturesTile numberFeaturesTile = new NumberFeaturesTile(context); // Custom feature tile implementation
 featureTiles.setMaxFeaturesTileDraw(numberFeaturesTile); // Draw feature count tiles when max features passed
@@ -140,17 +171,14 @@ featureOverlayOptions.tileProvider(featureOverlay);
 featureOverlayOptions.zIndex(-1); // Draw the feature tiles behind map markers
 map.addTileOverlay(featureOverlayOptions);
 
-BoundingBox boundingBox = new BoundingBox();
-Projection projection = ProjectionFactory.getProjection(ProjectionConstants.EPSG_WORLD_GEODETIC_SYSTEM);
-
 // URL Tile Generator (generate tiles from a URL)
 TileGenerator urlTileGenerator = new UrlTileGenerator(context, geoPackage,
-        "url_tile_table", "http://url/{z}/{x}/{y}.png", 1, 2, boundingBox, projection);
+        "url_tile_table", "http://url/{z}/{x}/{y}.png", 0, 0, boundingBox, projection);
 int urlTileCount = urlTileGenerator.generateTiles();
 
 // Feature Tile Generator (generate tiles from features)
 TileGenerator featureTileGenerator = new FeatureTileGenerator(context, geoPackage,
-        featureTable + "_tiles", featureTiles, 1, 2, boundingBox, projection);
+        "tiles_" + featureTable, featureTiles, 1, 2, boundingBox, projection);
 int featureTileCount = featureTileGenerator.generateTiles();
 
 // Close feature tiles (and indexer)
@@ -163,14 +191,14 @@ geoPackage.close();
 
 ### Installation ###
 
-Pull from the [Maven Central Repository](http://search.maven.org/#artifactdetails|mil.nga.geopackage.map|geopackage-android-map|4.0.0|aar) (AAR, POM, Source, Javadoc)
+Pull from the [Maven Central Repository](http://search.maven.org/#artifactdetails|mil.nga.geopackage.map|geopackage-android-map|6.7.4|aar) (AAR, POM, Source, Javadoc)
 
-    compile "mil.nga.geopackage.map:geopackage-android-map:4.0.0"
+    api 'mil.nga.geopackage.map:geopackage-android-map:6.7.4'
 
 ### Build ###
 
-[![Build Artifacts](https://github.com/ngageoint/geopackage-android-map/workflows/Build%20Artifacts/badge.svg)](https://github.com/ngageoint/geopackage-android-map/actions?query=workflow%3A%22Build+Artifacts%22)
-[![Test](https://github.com/ngageoint/geopackage-android-map/workflows/Test/badge.svg)](https://github.com/ngageoint/geopackage-android-map/actions?query=workflow%3ATest)
+[![Build Artifacts](https://github.com/ngageoint/geopackage-android-map/workflows/Build%20Artifacts/badge.svg)](https://github.com/ngageoint/geopackage-android-map/actions/workflows/build-artifacts.yml)
+[![Test](https://github.com/ngageoint/geopackage-android-map/workflows/Test/badge.svg)](https://github.com/ngageoint/geopackage-android-map/actions/workflows/test.yml)
 
 Build this repository using Android Studio and/or Gradle.
 
@@ -179,7 +207,8 @@ Build this repository using Android Studio and/or Gradle.
 Include as repositories in your project build.gradle:
 
     repositories {
-        jcenter()
+        google()
+        mavenCentral()
         mavenLocal()
     }
 
@@ -187,15 +216,15 @@ Include as repositories in your project build.gradle:
 
 Include the dependency in your module build.gradle with desired version number:
 
-    compile "mil.nga.geopackage.map:geopackage-android-map:4.0.0"
+    api 'mil.nga.geopackage.map:geopackage-android-map:6.7.4'
 
-As part of the build process, run the "uploadArchives" task on the geopackage-android Gradle script to update the Maven local repository.
+As part of the build process, run the "publishToMavenLocal" task on the geopackage-map Gradle script to update the Maven local repository.
 
 ##### Local Build #####
 
 Replace the normal build dependency in your module build.gradle with:
 
-    compile project(':geopackage-map')
+    api project(':geopackage-map')
 
 Include in your settings.gradle:
 

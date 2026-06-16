@@ -3,18 +3,26 @@ package mil.nga.geopackage.map.features;
 import android.content.Context;
 import android.content.res.Resources;
 import android.util.Log;
+import android.view.View;
 
+import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 import mil.nga.geopackage.GeoPackageException;
+import mil.nga.geopackage.extension.nga.style.FeatureStyleExtension;
+import mil.nga.geopackage.extension.nga.style.FeatureTableStyles;
+import mil.nga.geopackage.extension.nga.style.IconRow;
+import mil.nga.geopackage.extension.nga.style.StyleRow;
 import mil.nga.geopackage.extension.schema.columns.DataColumns;
 import mil.nga.geopackage.extension.schema.columns.DataColumnsDao;
 import mil.nga.geopackage.features.index.FeatureIndexListResults;
@@ -29,13 +37,14 @@ import mil.nga.geopackage.map.geom.GoogleMapShapeConverter;
 import mil.nga.geopackage.map.tiles.overlay.FeatureOverlayQuery;
 import mil.nga.geopackage.srs.SpatialReferenceSystem;
 import mil.nga.geopackage.srs.SpatialReferenceSystemDao;
+import mil.nga.geopackage.style.PixelBounds;
 import mil.nga.geopackage.tiles.overlay.FeatureRowData;
 import mil.nga.geopackage.tiles.overlay.FeatureTableData;
+import mil.nga.proj.Projection;
 import mil.nga.sf.Geometry;
 import mil.nga.sf.GeometryType;
 import mil.nga.sf.Point;
-import mil.nga.sf.proj.Projection;
-import mil.nga.sf.proj.ProjectionTransform;
+import mil.nga.sf.proj.GeometryTransform;
 import mil.nga.sf.util.GeometryPrinter;
 
 /**
@@ -50,6 +59,11 @@ public class FeatureInfoBuilder {
      * Feature DAO
      */
     private final FeatureDao featureDao;
+
+    /**
+     * Feature Style Extension
+     */
+    private FeatureTableStyles featureStyles;
 
     /**
      * Geometry Type
@@ -98,8 +112,47 @@ public class FeatureInfoBuilder {
      * @param featureDao feature dao
      */
     public FeatureInfoBuilder(Context context, FeatureDao featureDao) {
+        this(context, featureDao, null);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param context       context
+     * @param featureDao    feature dao
+     * @param featureStyles feature table styles
+     * @since 6.3.0
+     */
+    public FeatureInfoBuilder(Context context, FeatureDao featureDao, FeatureTableStyles featureStyles) {
+        this(context, featureDao, featureStyles, false);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param context    context
+     * @param featureDao feature dao
+     * @param geodesic   geodesic check flag
+     * @since 6.7.4
+     */
+    public FeatureInfoBuilder(Context context, FeatureDao featureDao, boolean geodesic) {
+        this(context, featureDao, null, geodesic);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param context       context
+     * @param featureDao    feature dao
+     * @param featureStyles feature table styles
+     * @param geodesic      geodesic check flag
+     * @since 6.7.4
+     */
+    public FeatureInfoBuilder(Context context, FeatureDao featureDao, FeatureTableStyles featureStyles, boolean geodesic) {
 
         this.featureDao = featureDao;
+        this.featureStyles = featureStyles;
+        this.geodesic = geodesic;
 
         geometryType = featureDao.getGeometryType();
         name = featureDao.getDatabase() + " - " + featureDao.getTableName();
@@ -237,7 +290,7 @@ public class FeatureInfoBuilder {
      * @return results message or null if no results
      */
     public String buildResultsInfoMessageAndClose(FeatureIndexResults results) {
-        return buildResultsInfoMessageAndClose(results, 0, null, null);
+        return buildResultsInfoMessageAndClose(results, 0.0, null, null);
     }
 
     /**
@@ -248,7 +301,7 @@ public class FeatureInfoBuilder {
      * @return results message or null if no results
      */
     public String buildResultsInfoMessageAndClose(FeatureIndexResults results, Projection projection) {
-        return buildResultsInfoMessageAndClose(results, 0, null, projection);
+        return buildResultsInfoMessageAndClose(results, 0.0, null, projection);
     }
 
     /**
@@ -277,6 +330,51 @@ public class FeatureInfoBuilder {
 
         try {
             message = buildResultsInfoMessage(results, tolerance, clickLocation, projection);
+        } finally {
+            results.close();
+        }
+
+        return message;
+    }
+
+    /**
+     * Build a feature results information message and close the results
+     *
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         map click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @return results message or null if no results
+     * @since 6.3.0
+     */
+    public String buildResultsInfoMessageAndClose(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage) {
+        return buildResultsInfoMessageAndClose(results, tolerance, clickLocation, density, zoom, view, map, screenClickPercentage, null);
+    }
+
+    /**
+     * Build a feature results information message and close the results
+     *
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         map click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @param projection            desired geometry projection
+     * @return results message or null if no results
+     * @since 6.3.0
+     */
+    public String buildResultsInfoMessageAndClose(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage, Projection projection) {
+        String message = null;
+
+        try {
+            message = buildResultsInfoMessage(results, tolerance, clickLocation, density, zoom, view, map, screenClickPercentage, projection);
         } finally {
             results.close();
         }
@@ -329,11 +427,48 @@ public class FeatureInfoBuilder {
      * @return results message or null if no results
      */
     public String buildResultsInfoMessage(FeatureIndexResults results, double tolerance, LatLng clickLocation, Projection projection) {
+        return buildResultsInfoMessage(results, tolerance, clickLocation, 1.0f, 0.0, null, null, 0.0f, projection);
+    }
+
+    /**
+     * Build a feature results information message
+     *
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         map click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @return results message or null if no results
+     * @since 6.3.0
+     */
+    public String buildResultsInfoMessage(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage) {
+        return buildResultsInfoMessage(results, tolerance, clickLocation, density, zoom, view, map, screenClickPercentage, null);
+    }
+
+    /**
+     * Build a feature results information message
+     *
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         map click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @param projection            desired geometry projection
+     * @return results message or null if no results
+     * @since 6.3.0
+     */
+    public String buildResultsInfoMessage(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage, Projection projection) {
 
         String message = null;
 
         // Fine filter results so that the click location is within the tolerance of each feature row result
-        FeatureIndexResults filteredResults = fineFilterResults(results, tolerance, clickLocation);
+        FeatureIndexResults filteredResults = fineFilterResults(results, tolerance, clickLocation, density, zoom, view, map, screenClickPercentage);
 
         long featureCount = filteredResults.count();
         if (featureCount > 0) {
@@ -454,11 +589,48 @@ public class FeatureInfoBuilder {
      * @return feature table data or null if not results
      */
     public FeatureTableData buildTableDataAndClose(FeatureIndexResults results, double tolerance, LatLng clickLocation, Projection projection) {
+        return buildTableDataAndClose(results, tolerance, clickLocation, 1.0f, 0.0, null, null, 0.0f, projection);
+    }
+
+    /**
+     * Build a feature results information message
+     *
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         map click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @return feature table data or null if not results
+     * @since 6.3.0
+     */
+    public FeatureTableData buildTableDataAndClose(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage) {
+        return buildTableDataAndClose(results, tolerance, clickLocation, density, zoom, view, map, screenClickPercentage, null);
+    }
+
+    /**
+     * Build a feature results information message
+     *
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         map click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @param projection            desired geometry projection
+     * @return feature table data or null if not results
+     * @since 6.3.0
+     */
+    public FeatureTableData buildTableDataAndClose(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage, Projection projection) {
 
         FeatureTableData tableData = null;
 
         // Fine filter results so that the click location is within the tolerance of each feature row result
-        FeatureIndexResults filteredResults = fineFilterResults(results, tolerance, clickLocation);
+        FeatureIndexResults filteredResults = fineFilterResults(results, tolerance, clickLocation, density, zoom, view, map, screenClickPercentage);
 
         long featureCount = filteredResults.count();
         if (featureCount > 0) {
@@ -479,8 +651,10 @@ public class FeatureInfoBuilder {
                 for (FeatureRow featureRow : filteredResults) {
 
                     Map<String, Object> values = new HashMap<>();
+                    String idColumnName = null;
                     String geometryColumnName = null;
 
+                    int idColumn = featureRow.getPkColumnIndex();
                     int geometryColumn = featureRow.getGeometryColumnIndex();
                     for (int i = 0; i < featureRow.columnCount(); i++) {
 
@@ -490,7 +664,9 @@ public class FeatureInfoBuilder {
 
                         columnName = getColumnName(dataColumnsDao, featureRow, columnName);
 
-                        if (i == geometryColumn) {
+                        if(i == idColumn){
+                            idColumnName = columnName;
+                        }else if (i == geometryColumn) {
                             geometryColumnName = columnName;
                             if (projection != null && value != null) {
                                 GeoPackageGeometryData geomData = (GeoPackageGeometryData) value;
@@ -503,7 +679,7 @@ public class FeatureInfoBuilder {
                         }
                     }
 
-                    FeatureRowData featureRowData = new FeatureRowData(values, geometryColumnName);
+                    FeatureRowData featureRowData = new FeatureRowData(values, idColumnName, geometryColumnName);
                     rows.add(featureRowData);
                 }
 
@@ -536,7 +712,7 @@ public class FeatureInfoBuilder {
                 if (!projection.equals(srs.getOrganization(), srs.getOrganizationCoordsysId())) {
 
                     Projection geomProjection = srs.getProjection();
-                    ProjectionTransform transform = geomProjection.getTransformation(projection);
+                    GeometryTransform transform = GeometryTransform.create(geomProjection, projection);
 
                     Geometry projectedGeometry = transform.transform(geometryData.getGeometry());
                     geometryData.setGeometry(projectedGeometry);
@@ -600,21 +776,41 @@ public class FeatureInfoBuilder {
     /**
      * Fine filter the index results verifying the click location is within the tolerance of each feature row
      *
-     * @param results       feature index results
-     * @param tolerance     distance tolerance
-     * @param clickLocation click location
+     * @param results               feature index results
+     * @param tolerance             distance tolerance
+     * @param clickLocation         click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
      * @return filtered feature index results
      */
-    private FeatureIndexResults fineFilterResults(FeatureIndexResults results, double tolerance, LatLng clickLocation) {
+    private FeatureIndexResults fineFilterResults(FeatureIndexResults results, double tolerance, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage) {
 
         FeatureIndexResults filteredResults = null;
         if (ignoreGeometryTypes.contains(geometryType)) {
             filteredResults = new FeatureIndexListResults();
-        } else if (clickLocation == null && ignoreGeometryTypes.isEmpty()) {
+        } else if (results.count() == 0 || (clickLocation == null && ignoreGeometryTypes.isEmpty())) {
             filteredResults = results;
         } else {
 
-            FeatureIndexListResults filteredListResults = new FeatureIndexListResults();
+            TreeMap<Double, FeatureRow> sortedResults = new TreeMap<>(new Comparator<Double>() {
+                @Override
+                public int compare(Double distance1, Double distance2) {
+                    int compare = 0;
+                    if (distance1 >= 0) {
+                        if (distance2 >= 0) {
+                            compare = distance1.compareTo(distance2);
+                        } else {
+                            compare = -1;
+                        }
+                    } else if (distance2 >= 0) {
+                        compare = 1;
+                    }
+                    return compare;
+                }
+            });
 
             GoogleMapShapeConverter converter = new GoogleMapShapeConverter(
                     featureDao.getProjection());
@@ -628,16 +824,22 @@ public class FeatureInfoBuilder {
 
                         if (!ignoreGeometryTypes.contains(geometry.getGeometryType())) {
 
+                            Double distance = -1.0;
+
                             if (clickLocation != null) {
 
                                 GoogleMapShape mapShape = converter.toShape(geometry);
-                                if (MapUtils.isPointOnShape(clickLocation, mapShape, geodesic, tolerance)) {
-
-                                    filteredListResults.addRow(featureRow);
-
+                                Double styleFiltered = fineFilterStyle(featureRow, geometry, mapShape, clickLocation, density, zoom, view, map, screenClickPercentage);
+                                if (styleFiltered != null && styleFiltered == -2.0) {
+                                    distance = MapUtils.isPointOnShapeDistance(clickLocation, mapShape, geodesic, tolerance);
+                                } else {
+                                    distance = styleFiltered;
                                 }
-                            } else {
-                                filteredListResults.addRow(featureRow);
+
+                            }
+
+                            if (distance != null) {
+                                sortedResults.put(distance, featureRow);
                             }
 
                         }
@@ -646,10 +848,73 @@ public class FeatureInfoBuilder {
 
             }
 
-            filteredResults = filteredListResults;
+            filteredResults = new FeatureIndexListResults(new ArrayList<>(sortedResults.values()));
         }
 
         return filteredResults;
+    }
+
+    /**
+     * Fine filter the feature row with feature styles
+     *
+     * @param featureRow            feature row
+     * @param geometry              geometry
+     * @param mapShape              Google Map Shape
+     * @param clickLocation         click location
+     * @param density               display density: {@link android.util.DisplayMetrics#density}
+     * @param zoom                  current zoom level
+     * @param view                  view
+     * @param map                   Google Map
+     * @param screenClickPercentage screen click percentage between 0.0 and 1.0
+     * @return -2.0 when not style filtered, distance if passes fine filter, -1.0 when distance not calculated, null if does not pass
+     */
+    private Double fineFilterStyle(FeatureRow featureRow, Geometry geometry, GoogleMapShape mapShape, LatLng clickLocation, float density, double zoom, View view, GoogleMap map, float screenClickPercentage) {
+        Double distance = -2.0;
+        if (featureStyles != null && view != null && map != null) {
+
+            PixelBounds pixelBounds = null;
+
+            IconRow iconRow = featureStyles.getIcon(featureRow);
+            if (iconRow != null) {
+
+                pixelBounds = FeatureStyleExtension.calculatePixelBounds(iconRow, density);
+
+            } else {
+                StyleRow styleRow = featureStyles.getStyle(featureRow);
+                if (styleRow != null) {
+                    pixelBounds = FeatureStyleExtension.calculatePixelBounds(styleRow, density);
+                }
+            }
+
+            if (pixelBounds != null) {
+
+                // Clear expanded pixel bounds in the click direction opposite of a point
+                if (geometry.getGeometryType() == GeometryType.POINT) {
+                    Point point = (Point) geometry;
+                    if (point.getX() < clickLocation.longitude) {
+                        pixelBounds.setRight(0);
+                    } else if (point.getX() > clickLocation.longitude) {
+                        pixelBounds.setLeft(0);
+                    }
+                    if (point.getY() < clickLocation.latitude) {
+                        pixelBounds.setUp(0);
+                    } else if (point.getY() > clickLocation.latitude) {
+                        pixelBounds.setDown(0);
+                    }
+                    if (pixelBounds.getArea() == 0) {
+                        pixelBounds = null;
+                    }
+                }
+
+                // Get the map click distance tolerance
+                double tolerance = MapUtils.getToleranceDistance(clickLocation, density, zoom, pixelBounds, view, map, screenClickPercentage);
+
+                distance = MapUtils.isPointOnShapeDistance(clickLocation, mapShape, geodesic, tolerance);
+
+            }
+
+        }
+        return distance;
     }
 
 }

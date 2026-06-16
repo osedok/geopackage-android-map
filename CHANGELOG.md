@@ -4,9 +4,126 @@ Adheres to [Semantic Versioning](http://semver.org/).
 
 ---
 
-## 4.0.1 (TBD)
+## 6.7.5
 
-* TBD
+* geopackage-android version 6.7.5
+
+## [6.7.4](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.7.4) (04-05-2024)
+
+* geopackage-android version 6.7.4
+* Get Tile Providers and Bounded Overlays by tile table, feature table, or user DAO
+* Feature Overlay Query and Feature Info Builder geodesic support
+* gradle plugin updated to 8.3.1
+
+## [6.7.3](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.7.3) (11-30-2023)
+
+* geopackage-android version 6.7.3
+* play-services-maps version 18.2.0
+
+## [6.7.2](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.7.2) (10-10-2023)
+
+* compile and target SDK version 34
+* geopackage-android version 6.7.2
+* android-maps-utils version 3.5.3
+
+## [6.7.1](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.7.1) (01-24-2023)
+
+* geopackage-android version 6.7.1
+
+## [6.7.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.7.0) (12-08-2022)
+
+* geopackage-android version 6.7.0
+
+## [6.6.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.6.0) (09-26-2022)
+
+* min SDK version updated to 23
+* geopackage-android version 6.6.0
+
+## [6.5.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.5.0) (09-23-2022)
+
+* geopackage-android version 6.5.0
+* play-services-maps version 18.1.0
+* Map shape converter same projection conversion shortcuts
+
+## [6.4.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.4.0) (07-11-2022)
+
+* compile and target SDK version 33
+* geopackage-android version 6.4.0
+
+## [6.3.1](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.3.1) (05-06-2022)
+
+* geopackage-android version 6.3.1
+* MapUtils on shape returning distance support
+* Ordering of map click queried point based features by distance
+
+## [6.3.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.3.0) (04-19-2022)
+
+* geopackage-android version 6.3.0
+* LatLngBoundingBox coordinate constructor and directional methods
+* MapUtils build click and tolerance method enhancements (density, zoom, pixel bounds)
+* FeatureInfoBuilder feature styles fine filter support
+* FeatureOverlayQuery style pixel bounds support for querying visualized geometry styles and icons
+* gradle plugin updated to 7.1.3
+
+## [6.2.1](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.2.1) (03-11-2022)
+
+* compile SDK version 32
+* geopackage-android version 6.2.1
+
+## [6.2.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.2.0) (02-04-2022)
+
+* geopackage-android version 6.2.0
+* play-services-maps version 18.0.2
+* Removed INTERNET Android Manifest permission
+* FeatureOverlayQuery tileBounds methods
+
+## [6.1.3](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.1.3) (12-17-2021)
+
+* geopackage-android version 6.1.3
+* play-services-maps version 18.0.1
+* gradle plugin updated to 7.0.4
+
+## [6.1.2](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.1.2) (11-22-2021)
+
+* geopackage-android version 6.1.2
+
+## [6.1.1](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.1.1) (11-11-2021)
+
+* Java 11
+* geopackage-android version 6.1.1
+* gradle plugin updated to 7.0.3
+
+## [6.1.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.1.0) (11-05-2021)
+
+* compile SDK version 31
+* min SDK version updated to 19
+* geopackage-android version 6.1.0
+* play-services-maps version 18.0.0
+* android-maps-utils version 2.3.0
+
+## [6.0.2](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.0.2) (09-15-2021)
+
+* geopackage-android version 6.0.2
+
+## [6.0.1](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.0.1) (08-17-2021)
+
+* geopackage-android version 6.0.1
+
+## [6.0.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/6.0.0) (07-08-2021)
+
+* geopackage-android version 6.0.0
+* play-services-maps version 17.0.1
+* gradle plugin updated to 4.2.1
+
+## [5.1.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/5.1.0) (03-23-2021)
+
+* geopackage-android version 5.1.0
+
+## [5.0.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/5.0.0) (03-10-2021)
+
+* compile SDK version 30
+* geopackage-android version 5.0.0
+* gradle plugin updated to 4.1.2
 
 ## [4.0.0](https://github.com/ngageoint/geopackage-android-map/releases/tag/4.0.0) (07-14-2020)
 
